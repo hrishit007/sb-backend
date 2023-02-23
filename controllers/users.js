@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { USER_VALID_FOR_SIGNUP } from '../../client/src/constants/index.js';
+import { USER_VALID_FOR_SIGNUP } from '../../../frontend/client/src/constants/index.js';
 import { INVALID_CREDENTIALS, USERNAME_DNE, USER_ALREADY_EXISTS, INVALID_OTP } from '../constants/index.js';
-import nodemailer from nodemailer;
+import nodemailer from 'nodemailer';
 
 import User from '../models/user.js';
 
