@@ -66,7 +66,7 @@ export const verifyCredentials= async(req,res)=>{
         
         const hashedPassword= await bcrypt.hash(password,12);
         if(existingUser){
-            const result= await User.findOneAndUpdate(email,{email,password: hashedPassword,name,isVerified:false,otp});
+            const result= await User.findOneAndUpdate({email},{email,password: hashedPassword,name,isVerified:false,otp});
         }
         else{
             const result= await User.create({email:emailid,password: hashedPassword,name:username,isVerified:false,otp});
@@ -109,6 +109,7 @@ export const validateOtpForSignup=async(req,res)=>{
 export const signup= async (req,res)=>{
     //sign up logic goes here
     const {email,password,name}= req.body;
+    // console.log(email);
 
     try {
         const existingUser= await User.findOne({email});
@@ -118,7 +119,8 @@ export const signup= async (req,res)=>{
 
 
         const hashedPassword= await bcrypt.hash(password,12);
-        const result= await User.findOneAndReplace(email,{email,password: hashedPassword,name,isVerified:true});
+        // const temp= await User.findOneAndDelete({email});
+        const result= await User.findOneAndReplace({email},{email,password: hashedPassword,name,isVerified:true});
         const token= jwt.sign({email: result.email,id: result._id},'test',{expiresIn:"1h"});
         res.status(200).json({ result, token});
     } catch (error) {
