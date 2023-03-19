@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { USER_VALID_FOR_SIGNUP } from '../../client/src/constants/index.js';
 import { INVALID_CREDENTIALS, USERNAME_DNE, USER_ALREADY_EXISTS, INVALID_OTP } from '../constants/index.js';
 import nodemailer from 'nodemailer';
+import {google} from 'googleapis';
+import {OAuth2Client} from 'google-auth-library';
 
 import User from '../models/user.js';
 
@@ -61,6 +63,10 @@ export const verifyCredentials= async(req,res)=>{
         otp=otp*10+num;
     }
     console.log(otp);
+
+    
+
+
     try {
         const existingUser=await User.findOne({email});
         
@@ -71,6 +77,45 @@ export const verifyCredentials= async(req,res)=>{
         else{
             const result= await User.create({email:emailid,password: hashedPassword,name:username,isVerified:false,otp});
         }
+        
+        const CLIENT_ID = process.env.CLIENT_ID_FOR_EMAIL;
+        const CLIENT_SECRET = process.env.CLIENT_SECRET_FOR_EMAIL;
+        const REDIRECT_URI = process.env.REDIRECT_URI;
+        const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+        const FROM_EMAIL = 'sensingbharat@gmail.com';
+        const TO_EMAIL = emailid;
+        const SUBJECT = 'OTP for Sensing Bharat';
+        const TEXT = `Your OTP is ${otp}`;
+        const oAuth2Client = new google.auth.OAuth2(
+            CLIENT_ID,
+            CLIENT_SECRET,
+            REDIRECT_URI
+          );
+          
+        oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
+        const accessToken = await oAuth2Client.getAccessToken();
+        const transport = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: "OAuth2",
+                user: FROM_EMAIL,
+                clientId: CLIENT_ID,
+                clientSecret: CLIENT_SECRET,
+                refreshToken: REFRESH_TOKEN,
+                accessToken: accessToken,
+            },
+        });
+        
+
+        const mailOptions = {
+            from:FROM_EMAIL,
+            to:TO_EMAIL,
+            subject:SUBJECT,
+            text: TEXT,
+        };
+
+        const result = await transport.sendMail(mailOptions);
         res.status(200).json({message:"OTP sent successfully"});
     } catch (error) {
         console.log(error);
