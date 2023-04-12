@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { USER_VALID_FOR_SIGNUP } from '../../client/src/constants/index.js';
+import { USER_VALID_FOR_SIGNUP } from '../constants/index.js';
 import { INVALID_CREDENTIALS, USERNAME_DNE, USER_ALREADY_EXISTS, INVALID_OTP } from '../constants/index.js';
 import nodemailer from 'nodemailer';
 import {google} from 'googleapis';
@@ -48,36 +48,8 @@ export const checkIfUserExists= async (req,res)=>{
     }
 }
 
-
-
-export const verifyCredentials= async(req,res)=>{
-    const {email,password,name}= req.body;
-    const emailid=email;
-    const username=name;
-    let otp=0;
-    let num=0;
-    for(let i=0;i<6;i++){
-        num=Math.floor(Math.random()*10);
-        if(i==0 && num==0)
-            num=num+1;
-        otp=otp*10+num;
-    }
-    console.log(otp);
-
-    
-
-
+const sendOTPMail= async(otp,emailid)=>{
     try {
-        const existingUser=await User.findOne({email});
-        
-        const hashedPassword= await bcrypt.hash(password,12);
-        if(existingUser){
-            const result= await User.findOneAndUpdate({email},{email,password: hashedPassword,name,isVerified:false,otp});
-        }
-        else{
-            const result= await User.create({email:emailid,password: hashedPassword,name:username,isVerified:false,otp});
-        }
-        
         const CLIENT_ID = process.env.CLIENT_ID_FOR_EMAIL;
         const CLIENT_SECRET = process.env.CLIENT_SECRET_FOR_EMAIL;
         const REDIRECT_URI = process.env.REDIRECT_URI;
@@ -116,6 +88,42 @@ export const verifyCredentials= async(req,res)=>{
         };
 
         const result = await transport.sendMail(mailOptions);
+        
+    } catch (error) {
+        console.log(error);
+        
+    }
+}
+
+export const verifyCredentials= async(req,res)=>{
+    const {email,password,name}= req.body;
+    const emailid=email;
+    const username=name;
+    let otp=0;
+    let num=0;
+    for(let i=0;i<6;i++){
+        num=Math.floor(Math.random()*10);
+        if(i==0 && num==0)
+            num=num+1;
+        otp=otp*10+num;
+    }
+    // console.log(otp);
+
+    
+
+
+    try {
+        const existingUser=await User.findOne({email});
+        
+        const hashedPassword= await bcrypt.hash(password,12);
+        if(existingUser){
+            const result= await User.findOneAndUpdate({email},{email,password: hashedPassword,name,isVerified:false,otp});
+        }
+        else{
+            const result= await User.create({email:emailid,password: hashedPassword,name:username,isVerified:false,otp});
+        }
+        await sendOTPMail(otp,emailid);
+        
         res.status(200).json({message:"OTP sent successfully"});
     } catch (error) {
         console.log(error);
@@ -151,6 +159,23 @@ export const validateOtpForSignup=async(req,res)=>{
         res.status(500).json({message:'Something went wrong.'});
     }
 }
+
+export const resendOTP=async(req,res)=>{
+    const {email}=req.body;
+    try {
+        const emailid=email;
+        const existingUser=await User.findOne({email});
+        const otp=existingUser.otp;
+        
+        await sendOTPMail(otp,emailid);
+        // console.log(otp);
+        res.status(200).json({message:"OTP sent successfully"});
+    } catch (error) {
+        console.log(error);
+        
+    }
+}
+
 export const signup= async (req,res)=>{
     //sign up logic goes here
     const {email,password,name}= req.body;
