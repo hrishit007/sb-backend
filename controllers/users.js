@@ -1,8 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { USER_VALID_FOR_SIGNUP } from '../../../frontend/client/src/constants/index.js';
+
+import { USER_VALID_FOR_SIGNUP } from '../constants/index.js';
+
 import { INVALID_CREDENTIALS, USERNAME_DNE, USER_ALREADY_EXISTS, INVALID_OTP } from '../constants/index.js';
 import nodemailer from 'nodemailer';
+import {google} from 'googleapis';
+import {OAuth2Client} from 'google-auth-library';
 
 import User from '../models/user.js';
 
@@ -45,7 +49,52 @@ export const checkIfUserExists= async (req,res)=>{
     }
 }
 
+const sendOTPMail= async(otp,emailid)=>{
+    try {
+        const CLIENT_ID = process.env.CLIENT_ID_FOR_EMAIL;
+        const CLIENT_SECRET = process.env.CLIENT_SECRET_FOR_EMAIL;
+        const REDIRECT_URI = process.env.REDIRECT_URI;
+        const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+        const FROM_EMAIL = 'sensingbharat@gmail.com';
+        const TO_EMAIL = emailid;
+        const SUBJECT = 'OTP for Sensing Bharat';
+        const TEXT = `Your OTP is ${otp}`;
+        const oAuth2Client = new google.auth.OAuth2(
+            CLIENT_ID,
+            CLIENT_SECRET,
+            REDIRECT_URI
+          );
+          
+        oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
+        const accessToken = await oAuth2Client.getAccessToken();
+        const transport = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: "OAuth2",
+                user: FROM_EMAIL,
+                clientId: CLIENT_ID,
+                clientSecret: CLIENT_SECRET,
+                refreshToken: REFRESH_TOKEN,
+                accessToken: accessToken,
+            },
+        });
+        
+
+        const mailOptions = {
+            from:FROM_EMAIL,
+            to:TO_EMAIL,
+            subject:SUBJECT,
+            text: TEXT,
+        };
+
+        const result = await transport.sendMail(mailOptions);
+        
+    } catch (error) {
+        console.log(error);
+        
+    }
+}
 
 export const verifyCredentials= async(req,res)=>{
     const {email,password,name}= req.body;
@@ -59,7 +108,11 @@ export const verifyCredentials= async(req,res)=>{
             num=num+1;
         otp=otp*10+num;
     }
-    console.log(otp);
+    // console.log(otp);
+
+    
+
+
     try {
         const existingUser=await User.findOne({email});
         
@@ -70,6 +123,8 @@ export const verifyCredentials= async(req,res)=>{
         else{
             const result= await User.create({email:emailid,password: hashedPassword,name:username,isVerified:false,otp});
         }
+        await sendOTPMail(otp,emailid);
+        
         res.status(200).json({message:"OTP sent successfully"});
     } catch (error) {
         console.log(error);
@@ -105,6 +160,23 @@ export const validateOtpForSignup=async(req,res)=>{
         res.status(500).json({message:'Something went wrong.'});
     }
 }
+
+export const resendOTP=async(req,res)=>{
+    const {email}=req.body;
+    try {
+        const emailid=email;
+        const existingUser=await User.findOne({email});
+        const otp=existingUser.otp;
+        
+        await sendOTPMail(otp,emailid);
+        // console.log(otp);
+        res.status(200).json({message:"OTP sent successfully"});
+    } catch (error) {
+        console.log(error);
+        
+    }
+}
+
 export const signup= async (req,res)=>{
     //sign up logic goes here
     const {email,password,name}= req.body;

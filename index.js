@@ -1,3 +1,4 @@
+
 import express from "express";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
@@ -15,10 +16,12 @@ app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors());
 
+
 app.use("/user", userRoutes);
 // app.use("/cart", cartRoutes);
 app.use("/order", orderRoutes);
 app.use("/webhook", webhooksRoutes);
+app.use('/action',actionRoutes);
 
 const PORT = process.env.PORT;
 
