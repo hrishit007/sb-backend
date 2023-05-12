@@ -6,7 +6,6 @@ import nodemailer from 'nodemailer';
 
 import User from '../models/user.js';
 
-
 export const signin= async (req,res)=>{
     //sign in logic goes here
     const {email,password}= req.body;
