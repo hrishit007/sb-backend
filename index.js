@@ -13,6 +13,10 @@ app.use(bodyParser.json({ limit: "30mb", extended: true}));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true}));
 app.use(cors());
 
+app.get('/test',function(req,res){
+    res.send('{"response":"Working"}');
+    console.log('Works here');
+});
 app.use('/user',userRoutes);
 app.use('/action',actionRoutes);
 

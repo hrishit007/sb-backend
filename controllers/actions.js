@@ -1,29 +1,60 @@
 import {spawn} from 'child_process';
 import nodemailer from 'nodemailer';
 import {google} from 'googleapis';
+// import {http} from 'http';
+import rp from 'request-promise';
+// const rp = require('request-promise');
 
-export const createPdf=()=>{
-// Define the arguments for the Python script
-const args = ['./pythonCodes/generate_pdf.py'];
+const LOCAL_SERVER_IP= process.env.LOCAL_SERVER_IP_ADDRESS;
+const LOCAL_SERVER_PORT=process.env.LOCAL_SERVER_PORT;
 
-// Spawn a new Python process
-const pythonProcess = spawn('python', args);
+export const createPdf= async()=>{
+  const data = {
+    array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  } 
+  const options = {
+    method: 'POST',
 
-// Listen for data events from the Python process
-pythonProcess.stdout.on('data', (data) => {
-  console.log(`stdout: ${data}`);
-});
+    // http:flaskserverurl:port/route
+    uri: `${LOCAL_SERVER_IP}:${LOCAL_SERVER_PORT}/arraysum`,
+    body: data,
 
-// Listen for error events from the Python process
-pythonProcess.stderr.on('data', (data) => {
-  console.error(`stderr: ${data}`);
-});
-
-// Listen for close events from the Python process
-pythonProcess.on('close', (code) => {
-  console.log(`child process exited with code ${code}`);
-});
+    // Automatically stringifies
+    // the body to JSON 
+    json: true
+  };
+  const responseReceived= await rp(options)
+  .then(function (parsedBody){
+    console.log(parsedBody);
+    const result= parsedBody['result'];
+    console.log(result);
+  })
+  .catch(function (err) {
+    console.log(err);
+  });
 }
+// export const createPdf=()=>{
+// // Define the arguments for the Python script
+// const args = ['./pythonCodes/generate_pdf.py'];
+
+// // Spawn a new Python process
+// const pythonProcess = spawn('python', args);
+
+// // Listen for data events from the Python process
+// pythonProcess.stdout.on('data', (data) => {
+//   console.log(`stdout: ${data}`);
+// });
+
+// // Listen for error events from the Python process
+// pythonProcess.stderr.on('data', (data) => {
+//   console.error(`stderr: ${data}`);
+// });
+
+// // Listen for close events from the Python process
+// pythonProcess.on('close', (code) => {
+//   console.log(`child process exited with code ${code}`);
+// });
+// }
 export const sendfeedback= async (req)=>{
   const {firstName,lastName,email,phoneNumber,message,userName}=req.body;
   //send mail here to sensing bharat with details
