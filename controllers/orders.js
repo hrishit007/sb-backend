@@ -8,13 +8,14 @@ import axios from "axios";
 // which then redirects the user to the payment page
 
 export const connectToCashFree = async (req, res) => {
-  const { order_id, order_amount, order_currency, customer_details, order_meta } = req.body;
+  const { order_id, order_amount, order_currency, customer_details, order_meta, order_items } = req.body;
   const newOrder = new Order({
     order_id,
     order_amount,
     order_currency,
     customer_details,
     payment_status: "PENDING",
+    order_items,
   });
 
   // save to the db
